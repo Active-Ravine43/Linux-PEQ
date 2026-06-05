@@ -22,7 +22,7 @@ import logging
 from pathlib import Path
 from typing import Awaitable, Callable
 
-from peq_app.config import STATE_DIR, ensure_dirs
+from peq_app.config import GAIN_MAX_DB, GAIN_MIN_DB, STATE_DIR, ensure_dirs
 from peq_app.state.models import (
     BUILTIN_PRESETS,
     Channel,
@@ -56,6 +56,8 @@ class AppState:
 
         self.channels: dict[str, Channel] = {}
         self.selected_channel_id: str | None = None
+        self._dirty: bool = True
+        """True when state has changed since the last UI refresh."""
         self._observers: list[Observer] = []
         self._lock = asyncio.Lock()
 
@@ -87,11 +89,21 @@ class AppState:
 
     async def _notify(self, event: str, data: object = None) -> None:
         """Notify all observers of a state change."""
+        self._dirty = True
         for observer in self._observers:
             try:
                 await observer(event, data)
             except Exception:
                 logger.exception("Observer failed for event %s", event)
+
+    @property
+    def is_dirty(self) -> bool:
+        """True when state has changed since the last UI refresh."""
+        return self._dirty
+
+    def clear_dirty(self) -> None:
+        """Clear the dirty flag after a UI refresh has consumed the changes."""
+        self._dirty = False
 
     # ------------------------------------------------------------------
     # Channel management
@@ -150,12 +162,54 @@ class AppState:
     # ------------------------------------------------------------------
 
     async def set_volume(self, channel_id: str, volume: float) -> None:
-        """Set volume for a channel (0.0–1.0)."""
+        """Set volume for a channel (0.0–1.0).
+
+        Called from the UI — records user intent so the scan loop can
+        re-assert this value against external overrides.
+        """
+        clamped = max(0.0, min(1.0, volume))
         async with self._lock:
             channel = self.channels.get(channel_id)
             if channel:
-                channel.volume = max(0.0, min(1.0, volume))
-        await self._notify("volume_changed", {"channel_id": channel_id, "volume": volume})
+                channel.volume = clamped
+                channel.user_volume = clamped
+        await self._notify("volume_changed", {"channel_id": channel_id, "volume": clamped})
+
+    async def sync_volume_from_hardware(
+        self, channel_id: str, hardware_vol: float
+    ) -> None:
+        """Called by the scan loop to reconcile hardware volume with state.
+
+        If the user has explicitly set a volume for this channel, re-assert
+        that value to hardware (fighting external overrides from session
+        managers, flat-volumes, etc.).  Otherwise accept the hardware value
+        as the initial state.
+        """
+        volume_to_set: float | None = None
+
+        async with self._lock:
+            channel = self.channels.get(channel_id)
+            if not channel:
+                return
+
+            if (
+                channel.user_volume is not None
+                and abs(hardware_vol - channel.user_volume) > 0.01
+            ):
+                # User set a volume — re-assert it against external changes
+                channel.volume = channel.user_volume
+                volume_to_set = channel.user_volume
+            elif channel.user_volume is None:
+                # No user intent yet — accept hardware value as truth
+                if abs(hardware_vol - channel.volume) > 0.01:
+                    channel.volume = hardware_vol
+                    volume_to_set = hardware_vol
+
+        if volume_to_set is not None:
+            await self._notify(
+                "volume_changed",
+                {"channel_id": channel_id, "volume": volume_to_set},
+            )
 
     async def set_mute(self, channel_id: str, muted: bool) -> None:
         """Set mute state for a channel."""
@@ -195,7 +249,7 @@ class AppState:
                 return
             band = channel.eq_bands[band_index]
             if gain_db is not None:
-                band.gain_db = max(-24.0, min(24.0, gain_db))
+                band.gain_db = max(GAIN_MIN_DB, min(GAIN_MAX_DB, gain_db))
             if freq_hz is not None:
                 band.freq_hz = freq_hz
             if q is not None:
@@ -274,7 +328,10 @@ class AppState:
             },
         }
         path = STATE_DIR / "state.json"
-        path.write_text(json.dumps(data, indent=2))
+        try:
+            path.write_text(json.dumps(data, indent=2))
+        except OSError:
+            logger.exception("Failed to save state to %s", path)
 
     def load_state(self) -> None:
         """Load persisted channel state from disk."""
@@ -287,7 +344,9 @@ class AppState:
                 channel = Channel.from_dict(ch_data)
                 self.channels[channel.id] = channel
         except (json.JSONDecodeError, KeyError, TypeError):
-            logger.exception("Failed to load state from %s", path)
+            logger.exception("Failed to parse state from %s", path)
+        except OSError:
+            logger.exception("Failed to read state from %s", path)
 
     # ------------------------------------------------------------------
     # Presets

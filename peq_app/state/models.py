@@ -55,6 +55,13 @@ class Channel:
     eq_bands: list[EQBand] = field(default_factory=lambda: _default_bands())
     is_master: bool = False
     app_binary: str = ""
+    user_volume: float | None = None
+    """Volume explicitly set by the user via the UI.
+
+    When set, the scan loop re-asserts this value to hardware instead of
+    accepting external changes (e.g. from PipeWire session manager policies).
+    None means no user intent yet — hardware value is accepted as-is.
+    Not persisted across restarts."""
 
     @property
     def is_eq_active(self) -> bool:
@@ -148,7 +155,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="Bass Boost",
+        name="Bass",
         bands=[
             {"freq_hz": 31, "gain_db": 6.0, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": 4.0, "q": 0.707, "filter_type": "peaking"},
@@ -161,7 +168,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="Vocal Boost",
+        name="Vocals",
         bands=[
             {"freq_hz": 31, "gain_db": -3.0, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": -2.0, "q": 0.707, "filter_type": "peaking"},
@@ -176,7 +183,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="Loudness",
+        name="Loud",
         bands=[
             {"freq_hz": 31, "gain_db": 4.0, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": 3.0, "q": 0.5, "filter_type": "peaking"},
@@ -206,7 +213,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="FPS Gaming",
+        name="FPS",
         bands=[
             {"freq_hz": 31, "gain_db": -3.5, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": -3.5, "q": 0.707, "filter_type": "peaking"},
@@ -221,7 +228,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="Films & TV",
+        name="Films",
         bands=[
             {"freq_hz": 31, "gain_db": 2.5, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": 1.0, "q": 0.707, "filter_type": "peaking"},
@@ -236,7 +243,7 @@ BUILTIN_PRESETS: list[EQPreset] = [
         ],
     ),
     EQPreset(
-        name="Jazz / Acoustic",
+        name="Jazz",
         bands=[
             {"freq_hz": 31, "gain_db": -6.0, "q": 0.5, "filter_type": "lowshelf"},
             {"freq_hz": 63, "gain_db": -6.0, "q": 0.707, "filter_type": "peaking"},

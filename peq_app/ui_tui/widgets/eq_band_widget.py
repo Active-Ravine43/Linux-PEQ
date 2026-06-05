@@ -47,6 +47,9 @@ class EQBandWidget(Vertical):
         super().__init__(**kwargs)
         self.band_index = band_index
         self.freq_hz = DEFAULT_BAND_FREQUENCIES[band_index]
+        # Cached theme colours — set by _theme_band_widget on the app
+        self._cached_accent: str = "#84848e"
+        self._cached_neutral: str = "#3a3a3e"
 
     def compose(self) -> ComposeResult:
         """Band layout: gain label | fill bar | freq label."""
@@ -54,8 +57,13 @@ class EQBandWidget(Vertical):
         yield Static("", classes="band-fill")
         yield Static(_format_freq(self.freq_hz), classes="band-freq-label")
 
+    def cache_theme_colors(self, accent: str, neutral: str) -> None:
+        """Store theme colours so update_from_band doesn't need to re-query."""
+        self._cached_accent = accent
+        self._cached_neutral = neutral
+
     def update_from_band(self, band: EQBand, index: int) -> None:
-        """Update display from an EQBand model. Uses app theme for colours."""
+        """Update display from an EQBand model. Uses cached theme colours."""
         self.gain_db = band.gain_db
         gain_label = self.query_one(".band-gain-label", Static)
         gain_label.update(_format_gain(band.gain_db))
@@ -68,19 +76,9 @@ class EQBandWidget(Vertical):
         fill = self.query_one(".band-fill", Static)
         fill.styles.height = f"{height_pct}%"
 
-        # Resolve theme colours from the app
-        accent = "#b8954a"
-        neutral = "#3a3a3e"
-        try:
-            if self.app is not None:
-                c = getattr(self.app, "theme_colors", None)
-                if isinstance(c, dict):
-                    accent = c.get("accent", accent)
-                    neutral = c.get("band_neutral", neutral)
-        except Exception:
-            pass
-
-        fill.styles.background = accent if abs(band.gain_db) >= 0.5 else neutral
+        fill.styles.background = (
+            self._cached_accent if abs(band.gain_db) >= 0.5 else self._cached_neutral
+        )
 
     # ------------------------------------------------------------------
     # Mouse interaction

@@ -41,7 +41,10 @@ class ChannelPanel(Vertical):
             self.refresh_channels()
 
     def refresh_channels(self) -> None:
-        """Re-render the channel list from current state."""
+        """Re-render the channel list from current state (skip if clean)."""
+        if not self._state.is_dirty:
+            return
+        self._state.clear_dirty()
         scroll = self.query_one("#channel-list", VerticalScroll)
         current_ids = {w.id for w in scroll.query(ChannelRow)}
 

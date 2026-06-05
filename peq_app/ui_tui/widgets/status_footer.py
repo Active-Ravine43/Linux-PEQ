@@ -42,3 +42,15 @@ class StatusFooter(Horizontal):
         """Briefly show the new theme name in the status bar."""
         left = self.query_one(".status-left", Static)
         left.update(f"Theme: {theme_name}")
+
+    def show_narrow_warning(self, width: int, min_width: int) -> None:
+        """Show a narrow-terminal warning in the right side of the footer."""
+        right = self.query_one(".status-right", Static)
+        right.update(f"⚠ Narrow: {width} cols — resize to ≥{min_width}")
+
+    def clear_narrow_warning(self) -> None:
+        """Restore the default shortcuts display."""
+        right = self.query_one(".status-right", Static)
+        right.update(
+            "Tab: switch  ·  m: mute  ·  1-0: bands  ·  t: theme  ·  q: quit"
+        )

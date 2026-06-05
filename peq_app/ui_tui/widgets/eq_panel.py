@@ -45,7 +45,10 @@ class EQPanel(Vertical):
             self.refresh_bands()
 
     def refresh_bands(self) -> None:
-        """Update band widgets and volume slider from current state."""
+        """Update band widgets and volume slider from current state (skip if clean)."""
+        if not self._state.is_dirty:
+            return
+        self._state.clear_dirty()
         channel = self._state.selected_channel
         if channel is None:
             return

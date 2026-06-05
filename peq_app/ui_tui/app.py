@@ -48,9 +48,11 @@ THEMES = {
         "border_subtle": "#1f1f23",
         "text": "#d4d4d8",
         "text_dim": "#909099",
-        "text_muted": "#6a6a74",
+        "text_muted": "#84848e",
         "accent": "#b8954a",
         "accent_dim": "#8a7038",
+        "danger": "#b84a4a",
+        "danger_dim": "#8a3838",
         "band_track": "#1f1f23",
         "band_neutral": "#3a3a3e",
     },
@@ -64,9 +66,11 @@ THEMES = {
         "border_subtle": "#1e2124",
         "text": "#d0d3d8",
         "text_dim": "#8a9099",
-        "text_muted": "#656a72",
+        "text_muted": "#808a94",
         "accent": "#7b9bb8",
         "accent_dim": "#5a7a94",
+        "danger": "#b85a5a",
+        "danger_dim": "#8a4242",
         "band_track": "#1e2124",
         "band_neutral": "#383c42",
     },
@@ -80,9 +84,11 @@ THEMES = {
         "border_subtle": "#1f1f21",
         "text": "#d0d0d2",
         "text_dim": "#8a8a8e",
-        "text_muted": "#66666a",
+        "text_muted": "#808085",
         "accent": "#909090",
         "accent_dim": "#6e6e6e",
+        "danger": "#a05050",
+        "danger_dim": "#783c3c",
         "band_track": "#1f1f21",
         "band_neutral": "#39393b",
     },
@@ -141,6 +147,7 @@ class EQApp(App):
         self._state.observe(self._on_state_event)
         self._scan_timer = asyncio.create_task(self._scan_loop())
         self._apply_theme()
+        self._check_terminal_width()
 
     async def on_unmount(self) -> None:
         """Clean up."""
@@ -239,9 +246,19 @@ class EQApp(App):
         except Exception:
             pass
 
-        # -- EQ band widgets (all) -----------------------------------
+        # -- EQ band widgets (all) — structural theme ------------------
         for band in self.query(EQBandWidget):
             self._theme_band_widget(band, c)
+
+        # -- EQ band fills — data-driven refresh with new theme colours -
+        channel = self._state.selected_channel
+        if channel:
+            for i, eq_band in enumerate(channel.eq_bands):
+                try:
+                    widget = self.query_one(f"#band-{i}", EQBandWidget)
+                    widget.update_from_band(eq_band, i)
+                except Exception:
+                    pass
 
         # -- Frequency labels ----------------------------------------
         try:
@@ -286,6 +303,25 @@ class EQApp(App):
         # Refresh the screen so everything repaints
         self.screen.refresh()
 
+    def _check_terminal_width(self) -> None:
+        """Warn if terminal is too narrow for the full EQ layout."""
+        width = self.size.width
+        min_width = 100
+        try:
+            footer = self.query_one(StatusFooter)
+            if width < min_width:
+                if not hasattr(self, "_narrow_warning_shown"):
+                    self._narrow_warning_shown = True
+                footer.show_narrow_warning(width, min_width)
+            else:
+                footer.clear_narrow_warning()
+        except Exception:
+            pass
+
+    def on_resize(self) -> None:
+        """Re-check terminal width when the window is resized."""
+        self._check_terminal_width()
+
     # ------------------------------------------------------------------
     # Per-widget theme helpers (also called from widgets on refresh)
     # ------------------------------------------------------------------
@@ -312,16 +348,23 @@ class EQApp(App):
             mute_viz = row.query_one(".channel-mute-btn", MuteVisualizer)
             mute_viz.styles.background = c["band_track"]
             if mute_viz.has_class("-muted"):
-                mute_viz.styles.color = "#b84a4a"
+                mute_viz.styles.color = c["danger"]
             else:
                 mute_viz.styles.color = c["accent"]
         except Exception:
             pass
 
     def _theme_band_widget(self, band: EQBandWidget, c: dict | None = None) -> None:
-        """Apply theme colors to a single EQBandWidget."""
+        """Apply structural theme colors to a single EQBandWidget.
+
+        Fill colour is data-driven (depends on gain_db), not theme-driven.
+        This method handles the track background, labels, and caches the
+        current accent/neutral for update_from_band to use.
+        """
         if c is None:
             c = self.theme_colors
+        # Cache colours on the widget so update_from_band doesn't re-query
+        band.cache_theme_colors(c["accent"], c["band_neutral"])
         try:
             band.query_one(".band-track", Static).styles.background = c["band_track"]
         except Exception:
@@ -332,15 +375,6 @@ class EQApp(App):
             pass
         try:
             band.query_one(".band-freq-label", Static).styles.color = c["text_dim"]
-        except Exception:
-            pass
-        # Update the fill colour unless it's CSS-class-controlled
-        try:
-            fill = band.query_one(".band-fill", Static)
-            if not fill.has_class("-active") and not fill.has_class("-highlighted"):
-                fill.styles.background = c["band_neutral"]
-            elif fill.has_class("-active"):
-                fill.styles.background = c["accent"]
         except Exception:
             pass
 
@@ -383,8 +417,11 @@ class EQApp(App):
                 for cid, channel in self._state.channels.items():
                     if not channel.is_master and channel.pipewire_node_id is not None:
                         vol = PWVolumeCtrl.get_volume(channel.pipewire_node_id)
-                        if vol is not None and abs(vol - channel.volume) > 0.01:
-                            await self._state.set_volume(cid, vol)
+                        if vol is not None:
+                            # sync_volume_from_hardware re-asserts user-set
+                            # volume against external overrides (e.g. PipeWire
+                            # session manager restoring stream volumes).
+                            await self._state.sync_volume_from_hardware(cid, vol)
                         muted = PWVolumeCtrl.get_mute(channel.pipewire_node_id)
                         if muted is not None and muted != channel.is_muted:
                             await self._state.set_mute(cid, muted)
