@@ -23,18 +23,24 @@ class PWNodeScanner:
         try:
             for si in self._pulse.sink_input_list():
                 props = si.proplist or {}
-                name = props.get("application.name") or props.get("media.name") or f"Sink Input {si.index}"
+                name = (
+                    props.get("application.name")
+                    or props.get("media.name")
+                    or f"Sink Input {si.index}"
+                )
                 binary = props.get("application.process.binary", "")
                 pid_str = props.get("application.process.id")
                 pid = int(pid_str) if pid_str else None
 
-                apps.append(AudioApp(
-                    name=name,
-                    sink_input_id=si.index,
-                    sink_id=si.sink,
-                    pid=pid,
-                    binary=binary,
-                ))
+                apps.append(
+                    AudioApp(
+                        name=name,
+                        sink_input_id=si.index,
+                        sink_id=si.sink,
+                        pid=pid,
+                        binary=binary,
+                    )
+                )
         except Exception:
             pass
         return apps

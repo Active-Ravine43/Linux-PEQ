@@ -1,4 +1,8 @@
-"""A single channel row in the channel panel."""
+"""A single channel row in the channel panel.
+
+Selection is indicated by background color only — no side-stripe borders.
+All styling lives in ``app.tcss``; this widget has no inline CSS.
+"""
 
 from __future__ import annotations
 
@@ -10,24 +14,14 @@ from textual.widgets import Static
 
 from peq_app.state.app_state import get_state
 from peq_app.state.models import Channel
+from peq_app.ui_tui.widgets.mute_visualizer import MuteVisualizer
 
 
 class ChannelRow(Horizontal):
-    """A row in the channel panel showing app name, volume, and selection state."""
+    """A row in the channel panel showing mute visualizer, app name, volume, and selection state.
 
-    DEFAULT_CSS = """
-    ChannelRow {
-        height: 3;
-        padding: 0 2;
-        border-bottom: solid #1f1f23;
-    }
-    ChannelRow:hover {
-        background: #1a1a1e;
-    }
-    ChannelRow.-selected {
-        background: #1f1d18;
-        border-left: solid #b8954a;
-    }
+    Styles are defined in ``app.tcss``. Selection uses background tint
+    (``-selected`` class) with no side-stripe border.
     """
 
     def __init__(self, channel: Channel, selected: bool = False, **kwargs) -> None:
@@ -36,6 +30,7 @@ class ChannelRow(Horizontal):
         self._selected = selected
 
     def compose(self) -> ComposeResult:
+        yield MuteVisualizer(self.channel_id, classes="channel-mute-btn")
         yield Static("", classes="channel-name")
         yield Static("", classes="channel-volume-text")
 
@@ -47,6 +42,7 @@ class ChannelRow(Horizontal):
 
     def update_from_channel(self, channel: Channel, selected: bool) -> None:
         """Refresh display from a Channel model."""
+        mute_viz = self.query_one(".channel-mute-btn", MuteVisualizer)
         name_widget = self.query_one(".channel-name", Static)
         vol_widget = self.query_one(".channel-volume-text", Static)
 
@@ -56,6 +52,7 @@ class ChannelRow(Horizontal):
             name_widget.update(channel.name[:24])
 
         vol_pct = int(channel.volume * 100)
+        mute_viz.muted = channel.is_muted
         if channel.is_muted:
             vol_widget.update("MUTED")
         else:

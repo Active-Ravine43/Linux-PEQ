@@ -53,8 +53,16 @@ class ChannelPanel(Vertical):
                 row.update_from_channel(channel, cid == self._state.selected_channel_id)
             else:
                 # Add new row
-                row = ChannelRow(channel, selected=(cid == self._state.selected_channel_id), id=widget_id)
+                row = ChannelRow(
+                    channel, selected=(cid == self._state.selected_channel_id), id=widget_id
+                )
                 scroll.mount(row)
+                # Apply current theme to the newly created row
+                if self.app is not None:
+                    try:
+                        self.app._theme_channel_row(row)  # type: ignore[union-attr]
+                    except Exception:
+                        pass
 
         # Remove stale rows
         valid_ids = {f"channel-row-{_sanitize_id(cid)}" for cid in self._state.channels}

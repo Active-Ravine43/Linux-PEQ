@@ -14,7 +14,13 @@ import json
 import os
 from pathlib import Path
 
-from peq_app.config import FILTER_CHAIN_DIR, PIPEWIRE_CONFIG_DIR, DEFAULT_BAND_FREQUENCIES, DEFAULT_BAND_TYPES, DEFAULT_Q
+from peq_app.config import (
+    DEFAULT_BAND_FREQUENCIES,
+    DEFAULT_BAND_TYPES,
+    DEFAULT_Q,
+    FILTER_CHAIN_DIR,
+    PIPEWIRE_CONFIG_DIR,
+)
 
 
 def _build_filter_graph_json(
@@ -39,21 +45,25 @@ def _build_filter_graph_json(
 
     for i, band in enumerate(bands):
         name = f"eq_band_{i + 1}"
-        graph_nodes.append({
-            "type": "builtin",
-            "name": name,
-            "label": f"bq_{band['filter_type']}",
-            "control": {
-                "Freq": band["freq_hz"],
-                "Q": band["q"],
-                "Gain": band["gain_db"],
-            },
-        })
+        graph_nodes.append(
+            {
+                "type": "builtin",
+                "name": name,
+                "label": f"bq_{band['filter_type']}",
+                "control": {
+                    "Freq": band["freq_hz"],
+                    "Q": band["q"],
+                    "Gain": band["gain_db"],
+                },
+            }
+        )
         if i > 0:
-            graph_links.append({
-                "output": f"eq_band_{i}:Out",
-                "input": f"eq_band_{i + 1}:In",
-            })
+            graph_links.append(
+                {
+                    "output": f"eq_band_{i}:Out",
+                    "input": f"eq_band_{i + 1}:In",
+                }
+            )
 
     safe_id = channel_id.replace(".", "_").replace("/", "_")
 
@@ -148,6 +158,7 @@ def write_filter_chain_conf(channel_id: str, bands: list[dict] | None = None) ->
     except OSError:
         # Fallback: copy the file
         import shutil
+
         shutil.copy2(conf_path, pw_link_path)
 
     return conf_path

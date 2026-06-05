@@ -24,7 +24,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "list", "sink-inputs"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 return None
@@ -39,7 +41,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "set-sink-input-volume", str(sink_input_id), f"{clamped:.4f}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):
@@ -51,7 +55,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "list", "sink-inputs"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return _parse_sink_input_mute(result.stdout, sink_input_id)
         except (subprocess.TimeoutExpired, OSError):
@@ -64,7 +70,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "set-sink-input-mute", str(sink_input_id), val],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):
@@ -76,7 +84,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "set-sink-input-mute", str(sink_input_id), "toggle"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):
@@ -88,7 +98,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "get-sink-volume", sink_name],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 return None
@@ -106,7 +118,9 @@ class PWVolumeCtrl:
         try:
             result = subprocess.run(
                 [PACTL, "set-sink-volume", sink_name, f"{clamped:.4f}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):

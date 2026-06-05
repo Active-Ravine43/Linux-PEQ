@@ -2,6 +2,8 @@
 
 Each band is a vertical bar: a track (background) with a fill (gain level).
 Mouse drag on the bar adjusts gain. Mouse wheel for fine adjustment.
+
+Colours come from the app's active theme — no hard-coded hex values.
 """
 
 from __future__ import annotations
@@ -10,11 +12,11 @@ import asyncio
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.events import Click, MouseMove, MouseDown, MouseUp, MouseScrollDown, MouseScrollUp
+from textual.events import Click, MouseDown, MouseMove, MouseScrollDown, MouseScrollUp, MouseUp
 from textual.reactive import reactive
 from textual.widgets import Static
 
-from peq_app.config import DEFAULT_BAND_FREQUENCIES, GAIN_MIN_DB, GAIN_MAX_DB
+from peq_app.config import DEFAULT_BAND_FREQUENCIES, GAIN_MAX_DB, GAIN_MIN_DB
 from peq_app.state.app_state import get_state
 from peq_app.state.models import EQBand
 
@@ -27,12 +29,10 @@ def _format_freq(freq_hz: float) -> str:
 
 
 def _format_gain(gain_db: float) -> str:
-    """Format gain label."""
-    if gain_db > 0:
-        return f"+{gain_db:.1f}"
-    elif gain_db < 0:
-        return f"{gain_db:.1f}"
-    return "0.0"
+    """Format gain label — always 5 chars wide for consistent band sizing."""
+    if abs(gain_db) < 0.05:
+        return " 0.0 "
+    return f"{gain_db:+5.1f}"
 
 
 class EQBandWidget(Vertical):
@@ -55,13 +55,12 @@ class EQBandWidget(Vertical):
         yield Static(_format_freq(self.freq_hz), classes="band-freq-label")
 
     def update_from_band(self, band: EQBand, index: int) -> None:
-        """Update display from an EQBand model."""
+        """Update display from an EQBand model. Uses app theme for colours."""
         self.gain_db = band.gain_db
         gain_label = self.query_one(".band-gain-label", Static)
         gain_label.update(_format_gain(band.gain_db))
 
-        # Update fill height proportionally. Gain range -24 to +24.
-        # Middle (0 dB) = 50% fill. +24 = 100%, -24 = 0%.
+        # Fill height: middle (0 dB) = 50% fill. +24 = 100%, -24 = 0%.
         pct = (band.gain_db - GAIN_MIN_DB) / (GAIN_MAX_DB - GAIN_MIN_DB)
         pct = max(0.0, min(1.0, pct))
         height_pct = int(pct * 100)
@@ -69,11 +68,19 @@ class EQBandWidget(Vertical):
         fill = self.query_one(".band-fill", Static)
         fill.styles.height = f"{height_pct}%"
 
-        # Color: neutral at 0 dB, accent at extremes
-        if abs(band.gain_db) < 0.5:
-            fill.styles.background = "#3a3a3e"  # neutral
-        else:
-            fill.styles.background = "#b8954a"  # accent
+        # Resolve theme colours from the app
+        accent = "#b8954a"
+        neutral = "#3a3a3e"
+        try:
+            if self.app is not None:
+                c = getattr(self.app, "theme_colors", None)
+                if isinstance(c, dict):
+                    accent = c.get("accent", accent)
+                    neutral = c.get("band_neutral", neutral)
+        except Exception:
+            pass
+
+        fill.styles.background = accent if abs(band.gain_db) >= 0.5 else neutral
 
     # ------------------------------------------------------------------
     # Mouse interaction
@@ -95,9 +102,7 @@ class EQBandWidget(Vertical):
         """Update gain while dragging."""
         if not self._dragging:
             return
-        # Dragging up → increase gain, down → decrease
         delta_y = self._drag_start_y - event.y
-        # Scale: each row of movement ≈ 1 dB
         gain_change = delta_y * 1.0
         new_gain = max(GAIN_MIN_DB, min(GAIN_MAX_DB, self._drag_start_gain + gain_change))
 

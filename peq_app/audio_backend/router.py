@@ -24,7 +24,9 @@ class PWRouter:
         try:
             result = subprocess.run(
                 [PACTL, "move-sink-input", str(sink_input_id), sink_name],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):
@@ -36,7 +38,9 @@ class PWRouter:
         try:
             result = subprocess.run(
                 [PACTL, "list", "short", "sinks"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             for line in result.stdout.splitlines():
                 parts = line.split("\t")
@@ -52,7 +56,9 @@ class PWRouter:
         try:
             result = subprocess.run(
                 [PACTL, "info"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             for line in result.stdout.splitlines():
                 if "Default Sink:" in line:

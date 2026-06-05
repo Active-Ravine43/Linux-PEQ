@@ -94,7 +94,8 @@ class PWEQEngine:
             proc = subprocess.Popen(
                 [
                     PIPEWIRE,
-                    "-c", "filter-chain.conf",
+                    "-c",
+                    "filter-chain.conf",
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -180,7 +181,9 @@ class PWEQEngine:
         try:
             result = subprocess.run(
                 [PW_CLI, "set-param", str(node_id), "Props", payload],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 logger.error("pw-cli set-param failed: %s", result.stderr.strip())
@@ -218,7 +221,9 @@ class PWEQEngine:
         try:
             result = subprocess.run(
                 [PW_CLI, "set-param", str(node_id), "Props", payload],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, OSError):
@@ -233,7 +238,9 @@ class PWEQEngine:
         try:
             result = subprocess.run(
                 [PW_CLI, "enum-params", str(node_id), "Props"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 return {}
@@ -263,12 +270,15 @@ class PWEQEngine:
 # Module-level helpers
 # ------------------------------------------------------------------
 
+
 def _find_node_by_name(name: str) -> int | None:
     """Find a PipeWire node ID by node.name using pw-cli ls Node."""
     try:
         result = subprocess.run(
             [PW_CLI, "ls", "Node"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return None

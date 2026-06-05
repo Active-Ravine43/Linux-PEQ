@@ -6,7 +6,7 @@ import asyncio
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.events import Click, MouseDown, MouseMove, MouseUp, MouseScrollDown, MouseScrollUp
+from textual.events import Click, MouseDown, MouseMove, MouseScrollDown, MouseScrollUp, MouseUp
 from textual.reactive import reactive
 from textual.widgets import Static
 

@@ -1,19 +1,17 @@
 /*
- * PEQ Textual TUI Theme
+ * PEQ Textual TUI — Minimalist Dark Theme
  *
- * Design: minimalist dark — someone tweaking EQ at their desk
- * in a dim room, focused on sound.
+ * Design: someone tweaking EQ at their desk in a dim room,
+ * focused on sound. Flat, clean, editorial.
  *
- * Palette (OKLCH-inspired warm off-black):
- *   canvas:    #0d0d0f  —  off-black, slight warm tint
- *   surface:   #161619  —  card/panel backgrounds
- *   border:    #2a2a2e  —  subtle 1px separators
- *   text:      #d4d4d8  —  primary, legible but not harsh
- *   text-dim:  #787780  —  secondary labels
- *   accent:    #b8954a  —  muted desaturated amber (single accent)
+ * Principles:
+ *   - 1px borders only, warm off-black canvas
+ *   - Single muted accent per theme
+ *   - No side-stripe borders, no gradient text
+ *   - Typographic hierarchy via weight + scale
  *
- * Absolute bans: no side-stripe borders, no gradient text,
- *                 no rounded-full containers, no pure #000/#fff.
+ * Amber (default) — desaturated warm gold accent on off-black.
+ * Slate / Mono themes applied at runtime via Python (press 't').
  */
 
 /* ── Base ─────────────────────────────────────────────── */
@@ -23,7 +21,7 @@ Screen {
     color: #d4d4d8;
 }
 
-/* ── App layout ──────────────────────────────────────── */
+/* ── App layout ─────────────────────────────────────── */
 
 #app-container {
     layout: horizontal;
@@ -31,7 +29,7 @@ Screen {
 }
 
 #channel-panel {
-    width: 32;
+    width: 28;
     height: 100%;
     background: #0d0d0f;
     border-right: solid #2a2a2e;
@@ -45,28 +43,63 @@ Screen {
 
 #eq-panel {
     height: 1fr;
+    min-height: 1;
     background: #0d0d0f;
+    overflow: hidden;
 }
 
+/* ── Preset bar — buttons fill full width, match EQ band width ── */
+
 #preset-bar {
+    width: 1fr;
+    min-height: 3;
     height: 3;
     background: #121215;
     border-top: solid #2a2a2e;
-    padding: 0 2;
+    padding: 0 1;
     layout: horizontal;
     align: center middle;
+    overflow: hidden;
 }
+
+#preset-bar Button {
+    width: 1fr;
+    min-width: 0;
+    background: #1f1f23;
+    color: #d4d4d8;
+    border: solid #2a2a2e;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#preset-bar Button:hover {
+    background: #2a2a2e;
+    border: solid #b8954a;
+    color: #d4d4d8;
+}
+
+/* ── Status footer ──────────────────────────────────── */
 
 #status-footer {
     height: 1;
     background: #121215;
     border-top: solid #2a2a2e;
-    color: #787780;
+    color: #909099;
     padding: 0 1;
     layout: horizontal;
 }
 
-/* ── Channel panel header ────────────────────────────── */
+#status-footer .status-left {
+    width: 1fr;
+    content-align: left middle;
+}
+
+#status-footer .status-right {
+    width: auto;
+    content-align: right middle;
+}
+
+/* ── Channel panel header ───────────────────────────── */
 
 #channel-header {
     height: 3;
@@ -78,7 +111,7 @@ Screen {
     content-align: left middle;
 }
 
-/* ── Channel rows ────────────────────────────────────── */
+/* ── Channel rows — background tint, no side-stripe ──── */
 
 ChannelRow {
     height: 3;
@@ -92,7 +125,6 @@ ChannelRow:hover {
 
 ChannelRow.-selected {
     background: #1f1d18;
-    border-left: solid #b8954a;
 }
 
 ChannelRow .channel-name {
@@ -100,19 +132,41 @@ ChannelRow .channel-name {
     text-style: bold;
 }
 
+ChannelRow .channel-mute-btn {
+    width: 3;
+    min-width: 3;
+    margin: 0 1 0 0;
+    background: #1f1f23;
+    color: #b8954a;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+    text-style: none;
+    content-align: center middle;
+}
+
+ChannelRow .channel-mute-btn:hover {
+    background: #2a2a2e;
+}
+
+ChannelRow .channel-mute-btn.-muted {
+    background: #2a1f1f;
+    color: #b84a4a;
+}
+
 ChannelRow .channel-volume-text {
-    color: #787780;
+    color: #909099;
     text-style: none;
     width: 6;
     content-align: right middle;
 }
 
 ChannelRow .channel-app-binary {
-    color: #5a5a62;
+    color: #6a6a74;
     text-style: italic;
 }
 
-/* ── EQ Panel ────────────────────────────────────────── */
+/* ── EQ Panel header ────────────────────────────────── */
 
 #eq-header {
     height: 3;
@@ -123,21 +177,25 @@ ChannelRow .channel-app-binary {
 }
 
 #eq-header .channel-subtitle {
-    color: #787780;
+    color: #909099;
     text-style: none;
 }
 
+/* ── EQ bands container ─────────────────────────────── */
+
 #eq-bands-container {
+    width: 1fr;
     height: 1fr;
     layout: horizontal;
     padding: 0 1;
 }
 
 #freq-labels {
+    width: 1fr;
     height: 1;
     layout: horizontal;
     padding: 0 1;
-    color: #5a5a62;
+    color: #909099;
 }
 
 .freq-label {
@@ -146,10 +204,11 @@ ChannelRow .channel-app-binary {
     text-style: none;
 }
 
-/* ── EQ Band Widget ──────────────────────────────────── */
+/* ── EQ Band Widget — track fills 1fr container ─────── */
 
 EQBandWidget {
     width: 1fr;
+    min-width: 7;
     height: 100%;
     layout: vertical;
     align: center bottom;
@@ -157,46 +216,39 @@ EQBandWidget {
 }
 
 EQBandWidget .band-track {
-    width: 8;
+    width: 100%;
     background: #1f1f23;
     height: 1fr;
 }
 
 EQBandWidget .band-fill {
-    width: 8;
+    width: 100%;
+    background: #3a3a3e;
+}
+
+EQBandWidget .band-fill.-active {
     background: #b8954a;
+}
+
+EQBandWidget .band-fill.-highlighted {
+    background: #d4d4d8;
 }
 
 EQBandWidget .band-gain-label {
     height: 1;
-    color: #787780;
+    color: #909099;
     content-align: center middle;
     text-style: none;
 }
 
 EQBandWidget .band-freq-label {
     height: 1;
-    color: #5a5a62;
+    color: #909099;
     content-align: center middle;
     text-style: none;
 }
 
-/* ── Preset buttons ──────────────────────────────────── */
-
-#preset-bar Button {
-    margin: 0 1;
-    min-width: 14;
-    background: #1f1f23;
-    color: #d4d4d8;
-    border: solid #2a2a2e;
-}
-
-#preset-bar Button:hover {
-    background: #2a2a2e;
-    border: solid #b8954a;
-}
-
-/* ── Volume slider ───────────────────────────────────── */
+/* ── Volume slider row ──────────────────────────────── */
 
 #volume-row {
     height: 1;
@@ -208,13 +260,14 @@ EQBandWidget .band-freq-label {
 #volume-row .volume-label {
     width: 8;
     content-align: left middle;
-    color: #787780;
+    color: #909099;
 }
 
 VolumeSlider {
     width: 1fr;
     height: 1;
     content-align: left middle;
+    background: #1f1f23;
 }
 
 VolumeSlider .slider-fill {
@@ -222,22 +275,10 @@ VolumeSlider .slider-fill {
     background: #b8954a;
 }
 
-/* ── Status footer ───────────────────────────────────── */
-
-#status-footer .status-left {
-    width: 1fr;
-    content-align: left middle;
-}
-
-#status-footer .status-right {
-    width: auto;
-    content-align: right middle;
-}
-
-/* ── Empty state ─────────────────────────────────────── */
+/* ── Empty state ────────────────────────────────────── */
 
 #empty-eq {
     height: 100%;
     content-align: center middle;
-    color: #5a5a62;
+    color: #6a6a74;
 }

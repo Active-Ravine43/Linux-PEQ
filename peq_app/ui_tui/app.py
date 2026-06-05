@@ -1,4 +1,12 @@
-"""Main Textual application for the PEQ TUI."""
+"""Main Textual application for the PEQ TUI.
+
+Minimalist dark theme system with 3 variants:
+  Amber (default) — warm desaturated gold accent
+  Slate           — cool blue-grey accent
+  Mono            — pure greyscale accent
+
+Press ``t`` to cycle themes at runtime.
+"""
 
 from __future__ import annotations
 
@@ -7,20 +15,80 @@ import logging
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Header, Footer, Static
+from textual.widgets import Button, Footer, Header, Static
 
 from peq_app.audio_backend.scanner import PWNodeScanner
 from peq_app.audio_backend.volume import PWVolumeCtrl
-from peq_app.config import SCAN_INTERVAL, IGNORED_BINARIES
+from peq_app.config import IGNORED_BINARIES, SCAN_INTERVAL
 from peq_app.state.app_state import get_state
 from peq_app.state.models import Channel
 from peq_app.ui_tui.widgets.channel_panel import ChannelPanel
+from peq_app.ui_tui.widgets.channel_row import ChannelRow
+from peq_app.ui_tui.widgets.eq_band_widget import EQBandWidget
 from peq_app.ui_tui.widgets.eq_panel import EQPanel
 from peq_app.ui_tui.widgets.preset_bar import PresetBar
 from peq_app.ui_tui.widgets.status_footer import StatusFooter
+from peq_app.ui_tui.widgets.mute_visualizer import MuteVisualizer
 from peq_app.ui_tui.widgets.volume_slider import VolumeSlider
 
 logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------------
+# Theme definitions
+# ------------------------------------------------------------------
+
+THEMES = {
+    "amber": {
+        "name": "Amber",
+        "canvas": "#0d0d0f",
+        "surface": "#121215",
+        "surface_hover": "#1a1a1e",
+        "surface_selected": "#1f1d18",
+        "border": "#2a2a2e",
+        "border_subtle": "#1f1f23",
+        "text": "#d4d4d8",
+        "text_dim": "#909099",
+        "text_muted": "#6a6a74",
+        "accent": "#b8954a",
+        "accent_dim": "#8a7038",
+        "band_track": "#1f1f23",
+        "band_neutral": "#3a3a3e",
+    },
+    "slate": {
+        "name": "Slate",
+        "canvas": "#0d0f11",
+        "surface": "#141618",
+        "surface_hover": "#1c1e22",
+        "surface_selected": "#181c22",
+        "border": "#2a2d30",
+        "border_subtle": "#1e2124",
+        "text": "#d0d3d8",
+        "text_dim": "#8a9099",
+        "text_muted": "#656a72",
+        "accent": "#7b9bb8",
+        "accent_dim": "#5a7a94",
+        "band_track": "#1e2124",
+        "band_neutral": "#383c42",
+    },
+    "mono": {
+        "name": "Mono",
+        "canvas": "#0d0d0e",
+        "surface": "#131314",
+        "surface_hover": "#1b1b1c",
+        "surface_selected": "#1a1a1b",
+        "border": "#2b2b2d",
+        "border_subtle": "#1f1f21",
+        "text": "#d0d0d2",
+        "text_dim": "#8a8a8e",
+        "text_muted": "#66666a",
+        "accent": "#909090",
+        "accent_dim": "#6e6e6e",
+        "band_track": "#1f1f21",
+        "band_neutral": "#39393b",
+    },
+}
+
+THEME_ORDER = ["amber", "slate", "mono"]
 
 
 class EQApp(App):
@@ -32,6 +100,7 @@ class EQApp(App):
         ("tab", "focus_next_channel", "Next channel"),
         ("shift+tab", "focus_prev_channel", "Prev channel"),
         ("m", "toggle_mute", "Mute"),
+        ("t", "cycle_theme", "Theme"),
         ("1", "select_band(0)", "Band 1"),
         ("2", "select_band(1)", "Band 2"),
         ("3", "select_band(2)", "Band 3"),
@@ -50,6 +119,12 @@ class EQApp(App):
         self._state = get_state()
         self._scanner = PWNodeScanner()
         self._scan_timer: asyncio.Task | None = None
+        self._current_theme: str = "amber"
+
+    @property
+    def theme_colors(self) -> dict:
+        """Current theme's color palette."""
+        return THEMES[self._current_theme]
 
     def compose(self) -> ComposeResult:
         """Compose the widget tree."""
@@ -57,20 +132,217 @@ class EQApp(App):
         with Container(id="app-container"):
             yield ChannelPanel()
             with Vertical(id="eq-area"):
-                yield EQPanel()
-                yield PresetBar()
+                yield EQPanel(id="eq-panel")
+                yield PresetBar(id="preset-bar")
         yield StatusFooter()
 
     async def on_mount(self) -> None:
-        """Start scanning for audio apps."""
+        """Start scanning for audio apps and apply the default theme."""
         self._state.observe(self._on_state_event)
         self._scan_timer = asyncio.create_task(self._scan_loop())
+        self._apply_theme()
 
     async def on_unmount(self) -> None:
         """Clean up."""
         if self._scan_timer:
             self._scan_timer.cancel()
         self._scanner.close()
+
+    # ------------------------------------------------------------------
+    # Theme switching
+    # ------------------------------------------------------------------
+
+    def action_cycle_theme(self) -> None:
+        """Cycle to the next theme (amber → slate → mono → amber)."""
+        current_idx = THEME_ORDER.index(self._current_theme)
+        next_idx = (current_idx + 1) % len(THEME_ORDER)
+        self._current_theme = THEME_ORDER[next_idx]
+        self._apply_theme()
+
+        try:
+            footer = self.query_one(StatusFooter)
+            footer.flash_theme(THEMES[self._current_theme]["name"])
+        except Exception:
+            pass
+
+    def _apply_theme(self) -> None:
+        """Walk every themed widget and apply the current palette.
+
+        This is called on mount and on every theme cycle.  It must touch
+        every widget whose color is set by CSS so that runtime overrides
+        match the selected theme.
+        """
+        c = self.theme_colors
+
+        # -- Screen --------------------------------------------------
+        self.screen.styles.background = c["canvas"]
+        self.screen.styles.color = c["text"]
+
+        # -- Header --------------------------------------------------
+        try:
+            hdr = self.query_one(Header)
+            hdr.styles.background = c["surface"]
+        except Exception:
+            pass
+
+        # -- Channel panel container ---------------------------------
+        try:
+            cp = self.query_one("#channel-panel")
+            cp.styles.background = c["canvas"]
+            cp.styles.border_right = ("solid", c["border"])
+        except Exception:
+            pass
+
+        # -- Channel header ------------------------------------------
+        try:
+            ch = self.query_one("#channel-header")
+            ch.styles.background = c["surface"]
+            ch.styles.border_bottom = ("solid", c["border"])
+            ch.styles.color = c["text"]
+        except Exception:
+            pass
+
+        # -- Channel rows (all) --------------------------------------
+        for row in self.query(ChannelRow):
+            self._theme_channel_row(row, c)
+
+        # -- EQ panel ------------------------------------------------
+        try:
+            eqp = self.query_one("#eq-panel")
+            eqp.styles.background = c["canvas"]
+        except Exception:
+            pass
+
+        # -- EQ header -----------------------------------------------
+        try:
+            eqh = self.query_one("#eq-header")
+            eqh.styles.color = c["text"]
+        except Exception:
+            pass
+
+        # -- Volume label --------------------------------------------
+        try:
+            vl = self.query_one(".volume-label")
+            vl.styles.color = c["text_dim"]
+        except Exception:
+            pass
+
+        # -- Volume slider track + fill ------------------------------
+        try:
+            vs = self.query_one(VolumeSlider)
+            vs.styles.background = c["band_track"]
+        except Exception:
+            pass
+        try:
+            sf = self.query_one(".slider-fill")
+            sf.styles.background = c["accent"]
+        except Exception:
+            pass
+
+        # -- EQ band widgets (all) -----------------------------------
+        for band in self.query(EQBandWidget):
+            self._theme_band_widget(band, c)
+
+        # -- Frequency labels ----------------------------------------
+        try:
+            fl = self.query_one("#freq-labels")
+            fl.styles.color = c["text_dim"]
+        except Exception:
+            pass
+        for lbl in self.query(".freq-label"):
+            lbl.styles.color = c["text_dim"]
+
+        # -- Preset bar ----------------------------------------------
+        try:
+            pb = self.query_one("#preset-bar")
+            pb.styles.background = c["surface"]
+            pb.styles.border_top = ("solid", c["border"])
+        except Exception:
+            pass
+
+        # -- Preset buttons ------------------------------------------
+        for btn in self.query("Button"):
+            if btn.id and btn.id.startswith("preset-"):
+                btn.styles.background = c["band_track"]
+                btn.styles.color = c["text"]
+                btn.styles.border = ("solid", c["border"])
+
+        # -- Status footer -------------------------------------------
+        try:
+            sf = self.query_one("#status-footer")
+            sf.styles.background = c["surface"]
+            sf.styles.border_top = ("solid", c["border"])
+            sf.styles.color = c["text_dim"]
+        except Exception:
+            pass
+
+        # -- Empty state ---------------------------------------------
+        try:
+            ee = self.query_one("#empty-eq")
+            ee.styles.color = c["text_muted"]
+        except Exception:
+            pass
+
+        # Refresh the screen so everything repaints
+        self.screen.refresh()
+
+    # ------------------------------------------------------------------
+    # Per-widget theme helpers (also called from widgets on refresh)
+    # ------------------------------------------------------------------
+
+    def _theme_channel_row(self, row: ChannelRow, c: dict | None = None) -> None:
+        """Apply theme colors to a single ChannelRow."""
+        if c is None:
+            c = self.theme_colors
+        # Row background — selected gets accent tint, default gets canvas
+        if row.has_class("-selected"):
+            row.styles.background = c["surface_selected"]
+        else:
+            row.styles.background = c["canvas"]
+        row.styles.border_bottom = ("solid", c["border_subtle"])
+        try:
+            row.query_one(".channel-name", Static).styles.color = c["text"]
+        except Exception:
+            pass
+        try:
+            row.query_one(".channel-volume-text", Static).styles.color = c["text_dim"]
+        except Exception:
+            pass
+        try:
+            mute_viz = row.query_one(".channel-mute-btn", MuteVisualizer)
+            mute_viz.styles.background = c["band_track"]
+            if mute_viz.has_class("-muted"):
+                mute_viz.styles.color = "#b84a4a"
+            else:
+                mute_viz.styles.color = c["accent"]
+        except Exception:
+            pass
+
+    def _theme_band_widget(self, band: EQBandWidget, c: dict | None = None) -> None:
+        """Apply theme colors to a single EQBandWidget."""
+        if c is None:
+            c = self.theme_colors
+        try:
+            band.query_one(".band-track", Static).styles.background = c["band_track"]
+        except Exception:
+            pass
+        try:
+            band.query_one(".band-gain-label", Static).styles.color = c["text_dim"]
+        except Exception:
+            pass
+        try:
+            band.query_one(".band-freq-label", Static).styles.color = c["text_dim"]
+        except Exception:
+            pass
+        # Update the fill colour unless it's CSS-class-controlled
+        try:
+            fill = band.query_one(".band-fill", Static)
+            if not fill.has_class("-active") and not fill.has_class("-highlighted"):
+                fill.styles.background = c["band_neutral"]
+            elif fill.has_class("-active"):
+                fill.styles.background = c["accent"]
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Scanning loop
@@ -84,7 +356,9 @@ class EQApp(App):
                 for app in apps:
                     if app.binary in IGNORED_BINARIES:
                         continue
-                    channel_id = f"{app.binary}.{app.pid}" if app.binary else f"app.{app.sink_input_id}"
+                    channel_id = (
+                        f"{app.binary}.{app.pid}" if app.binary else f"app.{app.sink_input_id}"
+                    )
                     name = app.name or app.binary or f"App {app.sink_input_id}"
 
                     existing = self._state.channels.get(channel_id)
@@ -100,14 +374,12 @@ class EQApp(App):
                     elif existing.pipewire_node_id != app.sink_input_id:
                         existing.pipewire_node_id = app.sink_input_id
 
-                # Build set of currently seen app IDs
                 seen_ids: set[str] = set()
                 for app in apps:
                     cid = f"{app.binary}.{app.pid}" if app.binary else f"app.{app.sink_input_id}"
                     seen_ids.add(cid)
                 await self._state.sync_channels(seen_ids)
 
-                # Refresh volumes for all channels
                 for cid, channel in self._state.channels.items():
                     if not channel.is_master and channel.pipewire_node_id is not None:
                         vol = PWVolumeCtrl.get_volume(channel.pipewire_node_id)
@@ -128,9 +400,6 @@ class EQApp(App):
 
     async def _on_state_event(self, event: str, data: object) -> None:
         """Handle state change notifications."""
-        # The TUI widgets are reactive — they read from AppState directly
-        # on refresh. This callback is for side effects (audio backend calls).
-
         if event == "volume_changed" and isinstance(data, dict):
             cid = data.get("channel_id")
             channel = self._state.channels.get(cid)
@@ -178,7 +447,6 @@ class EQApp(App):
 
     def action_select_band(self, index: int) -> None:
         """Select an EQ band by index (0-9)."""
-        # This is handled by the EQ panel's focus
         eq_panel = self.query_one(EQPanel)
         eq_panel.highlight_band(index)
 
