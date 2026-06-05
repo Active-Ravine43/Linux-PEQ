@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peq"
+version = "0.1.0"
+description = "Per-application parametric equalizer for Linux PipeWire"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+dependencies = [
+    "textual>=2.1",
+    "pulsectl>=24.0",
+    "rich",
+    "click>=8.0",
+]
+
+[project.scripts]
+peq = "peq_app.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["peq_app", "peq_app.*"]
