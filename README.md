@@ -91,6 +91,31 @@ make test              # run test suite
 
 ## Design
 
-Minimalist dark theme with 8 variants: **Amber** (default, warm gold accent), **Slate** (cool blue-grey), **Mono** (pure greyscale), **Forest** (muted moss green), **Copper** (warm terracotta), **Plum** (muted violet), **Ocean** (muted teal), and **Rosewood** (desaturated crimson). Off-black canvas, single muted accent per theme, 1px borders. Press `t` / `T` to cycle forward/backward at runtime. Theme preference is persisted to `~/.config/peq/settings.json`. Use `--theme <name>` flag to set the theme from the command line. Designed for someone tweaking EQ at their desk in a dim room.
+### Minimalist dark theme with 8 variants: 
+
+**Amber** (default, warm gold accent)![alt text](Screenshot_2026-06-06_00-21-08.png) 
+
+**Slate** (cool blue-grey)
+![alt text](Screenshot_2026-06-06_00-20-51.png)
+
+**Mono** (pure greyscale) 
+![alt text](Screenshot_2026-06-06_00-20-57.png)
+ 
+**Forest** (muted moss green) 
+![alt text](Screenshot_2026-06-06_00-21-02.png)
+
+**Copper** (warm terracotta)
+![alt text](Screenshot_2026-06-06_00-20-45.png)
+
+**Plum** (muted violet)
+![alt text](Screenshot_2026-06-06_00-22-44.png)
+
+**Ocean** (muted teal)
+![alt text](Screenshot_2026-06-06_00-22-50.png)
+
+**Rosewood** (desaturated crimson). 
+![alt text](Screenshot_2026-06-06_00-20-38.png)
+
+Off-black canvas, single muted accent per theme, 1px borders. Press `t` / `T` to cycle forward/backward at runtime. Theme preference is persisted to `~/.config/peq/settings.json`. Use `--theme <name>` flag to set the theme from the command line. Designed for someone tweaking EQ at their desk in a dim room.
 
 **Presets:** Flat, Bass Boost, Vocal Boost, Loudness — one-click buttons below the EQ panel.
