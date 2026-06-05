@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "name": "Flat",
+      "bands": [
+        {"freq_hz": 31, "gain_db": 0.0, "q": 0.707, "filter_type": "lowshelf"},
+        {"freq_hz": 63, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 125, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 250, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 500, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 1000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 2000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 4000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 8000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 16000, "gain_db": 0.0, "q": 0.707, "filter_type": "highshelf"}
+      ]
+    },
+    {
+      "name": "Bass Boost",
+      "bands": [
+        {"freq_hz": 31, "gain_db": 6.0, "q": 0.5, "filter_type": "lowshelf"},
+        {"freq_hz": 63, "gain_db": 4.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 125, "gain_db": 2.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 250, "gain_db": 1.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 500, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 1000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 2000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 4000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 8000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 16000, "gain_db": 0.0, "q": 0.707, "filter_type": "highshelf"}
+      ]
+    },
+    {
+      "name": "Vocal Boost",
+      "bands": [
+        {"freq_hz": 31, "gain_db": -3.0, "q": 0.5, "filter_type": "lowshelf"},
+        {"freq_hz": 63, "gain_db": -2.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 125, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 250, "gain_db": -1.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 500, "gain_db": 2.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 1000, "gain_db": 3.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 2000, "gain_db": 3.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 4000, "gain_db": 2.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 8000, "gain_db": 1.0, "q": 0.707, "filter_type": "peaking"},
+        {"freq_hz": 16000, "gain_db": 0.0, "q": 0.707, "filter_type": "highshelf"}
+      ]
+    }
+  ]
+}
