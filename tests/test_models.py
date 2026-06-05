@@ -42,7 +42,13 @@ class TestEQBand:
         }
 
     def test_from_dict(self) -> None:
-        d = {"freq_hz": 4000.0, "gain_db": 1.5, "q": 0.8, "filter_type": "highshelf", "enabled": False}
+        d = {
+            "freq_hz": 4000.0,
+            "gain_db": 1.5,
+            "q": 0.8,
+            "filter_type": "highshelf",
+            "enabled": False,
+        }
         band = EQBand.from_dict(d)
         assert band.freq_hz == 4000.0
         assert band.gain_db == 1.5
@@ -175,24 +181,36 @@ class TestEQPreset:
     """EQPreset model and built-in presets."""
 
     def test_preset_creation(self) -> None:
-        p = EQPreset(name="Test", bands=[{"freq_hz": 1000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"}])
+        p = EQPreset(
+            name="Test",
+            bands=[{"freq_hz": 1000, "gain_db": 0.0, "q": 0.707, "filter_type": "peaking"}],
+        )
         assert p.name == "Test"
         assert len(p.bands) == 1
 
     def test_preset_to_dict(self) -> None:
-        p = EQPreset(name="Test", bands=[{"freq_hz": 500, "gain_db": 3.0, "q": 0.5, "filter_type": "peaking"}])
+        p = EQPreset(
+            name="Test",
+            bands=[{"freq_hz": 500, "gain_db": 3.0, "q": 0.5, "filter_type": "peaking"}],
+        )
         d = p.to_dict()
         assert d["name"] == "Test"
         assert len(d["bands"]) == 1
 
     def test_preset_from_dict(self) -> None:
-        d = {"name": "Loaded", "bands": [{"freq_hz": 2000, "gain_db": -1.0, "q": 0.8, "filter_type": "peaking"}]}
+        d = {
+            "name": "Loaded",
+            "bands": [{"freq_hz": 2000, "gain_db": -1.0, "q": 0.8, "filter_type": "peaking"}],
+        }
         p = EQPreset.from_dict(d)
         assert p.name == "Loaded"
         assert p.bands[0]["gain_db"] == -1.0
 
     def test_preset_round_trip(self) -> None:
-        original = EQPreset(name="Round", bands=[{"freq_hz": 100, "gain_db": 2.0, "q": 0.3, "filter_type": "peaking"}])
+        original = EQPreset(
+            name="Round",
+            bands=[{"freq_hz": 100, "gain_db": 2.0, "q": 0.3, "filter_type": "peaking"}],
+        )
         restored = EQPreset.from_dict(original.to_dict())
         assert restored.name == original.name
         assert restored.bands == original.bands

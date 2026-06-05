@@ -23,7 +23,13 @@ import click
     type=int,
     help="Create an EQ sink for the given sink-input ID and print details",
 )
-def main(ui: str, scan: bool, create_eq: int | None) -> None:
+@click.option(
+    "--theme",
+    type=click.Choice(["amber", "slate", "mono", "forest", "copper", "plum", "ocean", "rosewood"]),
+    default=None,
+    help="Set the colour theme (persisted across sessions).",
+)
+def main(ui: str, scan: bool, create_eq: int | None, theme: str | None) -> None:
     """PEQ — Per-application Parametric Equalizer for Linux PipeWire."""
     if scan:
         from peq_app.audio_backend.scanner import PWNodeScanner
@@ -46,7 +52,7 @@ def main(ui: str, scan: bool, create_eq: int | None) -> None:
     if ui == "tui":
         from peq_app.ui_tui.app import run_app
 
-        run_app()
+        run_app(theme=theme)
     elif ui == "gui":
         click.echo("GTK4 GUI not yet implemented. Use --ui tui")
         sys.exit(1)

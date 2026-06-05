@@ -11,7 +11,10 @@
  *   - Typographic hierarchy via weight + scale
  *
  * Amber (default) — desaturated warm gold accent on off-black.
- * Slate / Mono themes applied at runtime via Python (press 't').
+ * Seven additional themes applied at runtime via Python (press 't' / 'T'
+ * to cycle forward/backward through Amber, Slate, Mono, Forest, Copper,
+ * Plum, Ocean, Rosewood). Theme preference saved to
+ * ~/.config/peq/settings.json.
  */
 
 /* ── Base ─────────────────────────────────────────────── */

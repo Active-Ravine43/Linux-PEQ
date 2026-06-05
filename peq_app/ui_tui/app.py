@@ -1,11 +1,17 @@
 """Main Textual application for the PEQ TUI.
 
-Minimalist dark theme system with 3 variants:
-  Amber (default) — warm desaturated gold accent
-  Slate           — cool blue-grey accent
-  Mono            — pure greyscale accent
+Minimalist dark theme system with 8 variants:
+  Amber    — warm desaturated gold accent (default)
+  Slate    — cool blue-grey accent
+  Mono     — pure greyscale accent
+  Forest   — muted moss green accent
+  Copper   — warm terracotta accent
+  Plum     — muted violet/aubergine accent
+  Ocean    — muted teal accent
+  Rosewood — desaturated crimson accent
 
-Press ``t`` to cycle themes at runtime.
+Press ``t`` / ``T`` to cycle themes forward/backward at runtime.
+The active theme is saved to ~/.config/peq/settings.json on every change.
 """
 
 from __future__ import annotations
@@ -19,16 +25,16 @@ from textual.widgets import Button, Footer, Header, Static
 
 from peq_app.audio_backend.scanner import PWNodeScanner
 from peq_app.audio_backend.volume import PWVolumeCtrl
-from peq_app.config import IGNORED_BINARIES, SCAN_INTERVAL
+from peq_app.config import IGNORED_BINARIES, SCAN_INTERVAL, load_settings, save_settings
 from peq_app.state.app_state import get_state
 from peq_app.state.models import Channel
 from peq_app.ui_tui.widgets.channel_panel import ChannelPanel
 from peq_app.ui_tui.widgets.channel_row import ChannelRow
 from peq_app.ui_tui.widgets.eq_band_widget import EQBandWidget
 from peq_app.ui_tui.widgets.eq_panel import EQPanel
+from peq_app.ui_tui.widgets.mute_visualizer import MuteVisualizer
 from peq_app.ui_tui.widgets.preset_bar import PresetBar
 from peq_app.ui_tui.widgets.status_footer import StatusFooter
-from peq_app.ui_tui.widgets.mute_visualizer import MuteVisualizer
 from peq_app.ui_tui.widgets.volume_slider import VolumeSlider
 
 logger = logging.getLogger(__name__)
@@ -92,9 +98,99 @@ THEMES = {
         "band_track": "#1f1f21",
         "band_neutral": "#39393b",
     },
+    "forest": {
+        "name": "Forest",
+        "canvas": "#0d0f0d",
+        "surface": "#121512",
+        "surface_hover": "#1a1e1a",
+        "surface_selected": "#1a1f18",
+        "border": "#2a2e2a",
+        "border_subtle": "#1f231f",
+        "text": "#d0d4d0",
+        "text_dim": "#8a9086",
+        "text_muted": "#80867c",
+        "accent": "#7a9b6a",
+        "accent_dim": "#5a7a4e",
+        "danger": "#b85a5a",
+        "danger_dim": "#8a4242",
+        "band_track": "#1f231f",
+        "band_neutral": "#363e34",
+    },
+    "copper": {
+        "name": "Copper",
+        "canvas": "#0f0d0b",
+        "surface": "#151211",
+        "surface_hover": "#1d1a18",
+        "surface_selected": "#1f1a16",
+        "border": "#2e2a26",
+        "border_subtle": "#23201d",
+        "text": "#d4d0cc",
+        "text_dim": "#908a85",
+        "text_muted": "#86807b",
+        "accent": "#b88a5a",
+        "accent_dim": "#8a6844",
+        "danger": "#b85a5a",
+        "danger_dim": "#8a4242",
+        "band_track": "#23201d",
+        "band_neutral": "#3e3832",
+    },
+    "plum": {
+        "name": "Plum",
+        "canvas": "#0e0c0f",
+        "surface": "#141116",
+        "surface_hover": "#1c1820",
+        "surface_selected": "#1e1722",
+        "border": "#2c2630",
+        "border_subtle": "#211c24",
+        "text": "#d0ccd4",
+        "text_dim": "#8a8590",
+        "text_muted": "#807b86",
+        "accent": "#9a7ab8",
+        "accent_dim": "#745a8a",
+        "danger": "#b85a7a",
+        "danger_dim": "#8a425a",
+        "band_track": "#211c24",
+        "band_neutral": "#3a3440",
+    },
+    "ocean": {
+        "name": "Ocean",
+        "canvas": "#0c0d0f",
+        "surface": "#111316",
+        "surface_hover": "#181b20",
+        "surface_selected": "#161c22",
+        "border": "#282c30",
+        "border_subtle": "#1d2124",
+        "text": "#ccd0d4",
+        "text_dim": "#858a90",
+        "text_muted": "#7b8086",
+        "accent": "#5a9bb8",
+        "accent_dim": "#447a94",
+        "danger": "#b85a5a",
+        "danger_dim": "#8a4242",
+        "band_track": "#1d2124",
+        "band_neutral": "#343c42",
+    },
+    "rosewood": {
+        "name": "Rosewood",
+        "canvas": "#0f0c0c",
+        "surface": "#151112",
+        "surface_hover": "#1d1818",
+        "surface_selected": "#1f1618",
+        "border": "#2e2626",
+        "border_subtle": "#231d1d",
+        "text": "#d4cccc",
+        "text_dim": "#908685",
+        "text_muted": "#867c7c",
+        "accent": "#b86a6a",
+        "accent_dim": "#8a5050",
+        "danger": "#d45050",
+        "danger_dim": "#a03c3c",
+        "band_track": "#231d1d",
+        "band_neutral": "#3e3535",
+    },
 }
 
-THEME_ORDER = ["amber", "slate", "mono"]
+THEME_ORDER = ["amber", "slate", "mono", "forest", "copper", "plum", "ocean", "rosewood"]
 
 
 class EQApp(App):
@@ -107,6 +203,7 @@ class EQApp(App):
         ("shift+tab", "focus_prev_channel", "Prev channel"),
         ("m", "toggle_mute", "Mute"),
         ("t", "cycle_theme", "Theme"),
+        ("T", "cycle_theme_reverse", "Theme rev"),
         ("1", "select_band(0)", "Band 1"),
         ("2", "select_band(1)", "Band 2"),
         ("3", "select_band(2)", "Band 3"),
@@ -120,12 +217,22 @@ class EQApp(App):
         ("q", "quit", "Quit"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, theme_override: str | None = None) -> None:
         super().__init__()
         self._state = get_state()
         self._scanner = PWNodeScanner()
         self._scan_timer: asyncio.Task | None = None
-        self._current_theme: str = "amber"
+
+        # Resolve default theme: CLI flag > saved setting > built-in default
+        if theme_override and theme_override in THEMES:
+            self._current_theme = theme_override
+        else:
+            settings = load_settings()
+            saved = settings.get("theme")
+            if saved and saved in THEMES:
+                self._current_theme = saved
+            else:
+                self._current_theme = "amber"
 
     @property
     def theme_colors(self) -> dict:
@@ -147,6 +254,7 @@ class EQApp(App):
         self._state.observe(self._on_state_event)
         self._scan_timer = asyncio.create_task(self._scan_loop())
         self._apply_theme()
+        self._save_current_theme()
         self._check_terminal_width()
 
     async def on_unmount(self) -> None:
@@ -160,17 +268,44 @@ class EQApp(App):
     # ------------------------------------------------------------------
 
     def action_cycle_theme(self) -> None:
-        """Cycle to the next theme (amber → slate → mono → amber)."""
+        """Cycle to the next theme."""
         current_idx = THEME_ORDER.index(self._current_theme)
         next_idx = (current_idx + 1) % len(THEME_ORDER)
         self._current_theme = THEME_ORDER[next_idx]
         self._apply_theme()
+        self._save_current_theme()
 
         try:
             footer = self.query_one(StatusFooter)
             footer.flash_theme(THEMES[self._current_theme]["name"])
         except Exception:
             pass
+
+    def action_cycle_theme_reverse(self) -> None:
+        """Cycle to the previous theme."""
+        current_idx = THEME_ORDER.index(self._current_theme)
+        prev_idx = (current_idx - 1) % len(THEME_ORDER)
+        self._current_theme = THEME_ORDER[prev_idx]
+        self._apply_theme()
+        self._save_current_theme()
+
+        try:
+            footer = self.query_one(StatusFooter)
+            footer.flash_theme(THEMES[self._current_theme]["name"])
+        except Exception:
+            pass
+
+    def set_theme(self, theme_key: str) -> None:
+        """Set the active theme by key, apply it, and persist."""
+        if theme_key not in THEMES:
+            return
+        self._current_theme = theme_key
+        self._apply_theme()
+        self._save_current_theme()
+
+    def _save_current_theme(self) -> None:
+        """Persist the active theme to disk."""
+        save_settings({"theme": self._current_theme})
 
     def _apply_theme(self) -> None:
         """Walk every themed widget and apply the current palette.
@@ -488,7 +623,11 @@ class EQApp(App):
         eq_panel.highlight_band(index)
 
 
-def run_app() -> None:
-    """Entry point for the TUI."""
-    app = EQApp()
+def run_app(theme: str | None = None) -> None:
+    """Entry point for the TUI.
+
+    Args:
+        theme: Optional theme key to override the persisted default.
+    """
+    app = EQApp(theme_override=theme)
     app.run()

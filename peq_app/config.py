@@ -1,7 +1,11 @@
 """Application constants and path configuration."""
 
+import json
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 APP_NAME = "peq"
 
@@ -11,6 +15,7 @@ CONFIG_DIR = XDG_CONFIG_HOME / APP_NAME
 FILTER_CHAIN_DIR = CONFIG_DIR / "filter-chains"
 STATE_DIR = CONFIG_DIR / "state"
 PRESETS_FILE = CONFIG_DIR / "presets.json"
+SETTINGS_FILE = CONFIG_DIR / "settings.json"
 
 # PipeWire paths
 PIPEWIRE_CONFIG_DIR = XDG_CONFIG_HOME / "pipewire" / "filter-chain.conf.d"
@@ -68,3 +73,26 @@ def ensure_dirs() -> None:
     """Create all required config directories."""
     for d in (FILTER_CHAIN_DIR, STATE_DIR, PIPEWIRE_CONFIG_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+
+def load_settings() -> dict:
+    """Load persisted user settings from disk.
+
+    Returns an empty dict if the file doesn't exist or can't be parsed.
+    """
+    ensure_dirs()
+    try:
+        if SETTINGS_FILE.exists():
+            return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Failed to load settings from %s: %s", SETTINGS_FILE, exc)
+    return {}
+
+
+def save_settings(settings: dict) -> None:
+    """Persist user settings to disk as JSON."""
+    ensure_dirs()
+    try:
+        SETTINGS_FILE.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        logger.warning("Failed to save settings to %s: %s", SETTINGS_FILE, exc)

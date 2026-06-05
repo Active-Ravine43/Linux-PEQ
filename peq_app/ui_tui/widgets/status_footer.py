@@ -51,6 +51,4 @@ class StatusFooter(Horizontal):
     def clear_narrow_warning(self) -> None:
         """Restore the default shortcuts display."""
         right = self.query_one(".status-right", Static)
-        right.update(
-            "Tab: switch  ·  m: mute  ·  1-0: bands  ·  t: theme  ·  q: quit"
-        )
+        right.update("Tab: switch  ·  m: mute  ·  1-0: bands  ·  t: theme  ·  q: quit")

@@ -36,7 +36,7 @@ VISUALIZER_FRAMES: list[str] = []
 for _t in range(14):
     chars: list[str] = []
     for bar in range(3):
-        pos = (_t + bar * 5) % 14          # offset each bar for wave effect
+        pos = (_t + bar * 5) % 14  # offset each bar for wave effect
         idx = pos if pos < 8 else 14 - pos  # triangle-wave fold
         chars.append(BLOCKS[idx])
     VISUALIZER_FRAMES.append("".join(chars))

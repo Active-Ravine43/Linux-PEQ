@@ -55,7 +55,16 @@ class TestThemeDefinitions:
     """Verify theme structure and consistency."""
 
     def test_all_themes_in_order(self) -> None:
-        assert THEME_ORDER == ["amber", "slate", "mono"]
+        assert THEME_ORDER == [
+            "amber",
+            "slate",
+            "mono",
+            "forest",
+            "copper",
+            "plum",
+            "ocean",
+            "rosewood",
+        ]
 
     def test_each_theme_order_key_exists(self) -> None:
         for key in THEME_ORDER:
@@ -75,9 +84,9 @@ class TestThemeDefinitions:
             for key, value in palette.items():
                 if key == "name":
                     continue
-                assert hex_re.match(value), (
-                    f"Theme '{theme_name}' key '{key}' = '{value}' is not #rrggbb"
-                )
+                assert hex_re.match(
+                    value
+                ), f"Theme '{theme_name}' key '{key}' = '{value}' is not #rrggbb"
 
     def test_theme_names_are_strings(self) -> None:
         for theme_name, palette in THEMES.items():
@@ -137,9 +146,7 @@ class TestContrastRatios:
         """Text on surface (headers, footer) should meet AA."""
         for theme_name, c in THEMES.items():
             ratio = contrast_ratio(c["text"], c["surface"])
-            assert ratio >= 4.5, (
-                f"Theme '{theme_name}' text on surface has contrast {ratio:.2f}:1"
-            )
+            assert ratio >= 4.5, f"Theme '{theme_name}' text on surface has contrast {ratio:.2f}:1"
 
 
 class TestThemeConsistency:
@@ -149,25 +156,25 @@ class TestThemeConsistency:
         for theme_name, c in THEMES.items():
             acc_lum = _relative_luminance(c["accent"])
             dim_lum = _relative_luminance(c["accent_dim"])
-            assert dim_lum < acc_lum, (
-                f"Theme '{theme_name}' accent_dim {c['accent_dim']} should be darker than accent {c['accent']}"
-            )
+            assert (
+                dim_lum < acc_lum
+            ), f"Theme '{theme_name}' accent_dim {c['accent_dim']} should be darker than accent {c['accent']}"
 
     def test_danger_dim_is_darker_than_danger(self) -> None:
         for theme_name, c in THEMES.items():
             dang_lum = _relative_luminance(c["danger"])
             dim_lum = _relative_luminance(c["danger_dim"])
-            assert dim_lum < dang_lum, (
-                f"Theme '{theme_name}' danger_dim should be darker than danger"
-            )
+            assert (
+                dim_lum < dang_lum
+            ), f"Theme '{theme_name}' danger_dim should be darker than danger"
 
     def test_surface_is_lighter_than_canvas(self) -> None:
         for theme_name, c in THEMES.items():
             surf_lum = _relative_luminance(c["surface"])
             canv_lum = _relative_luminance(c["canvas"])
-            assert surf_lum > canv_lum, (
-                f"Theme '{theme_name}' surface should be lighter than canvas"
-            )
+            assert (
+                surf_lum > canv_lum
+            ), f"Theme '{theme_name}' surface should be lighter than canvas"
 
     def test_text_is_lightest(self) -> None:
         """Text should be the lightest key except possibly highlighted states."""

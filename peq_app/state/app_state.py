@@ -175,9 +175,7 @@ class AppState:
                 channel.user_volume = clamped
         await self._notify("volume_changed", {"channel_id": channel_id, "volume": clamped})
 
-    async def sync_volume_from_hardware(
-        self, channel_id: str, hardware_vol: float
-    ) -> None:
+    async def sync_volume_from_hardware(self, channel_id: str, hardware_vol: float) -> None:
         """Called by the scan loop to reconcile hardware volume with state.
 
         If the user has explicitly set a volume for this channel, re-assert
@@ -192,10 +190,7 @@ class AppState:
             if not channel:
                 return
 
-            if (
-                channel.user_volume is not None
-                and abs(hardware_vol - channel.user_volume) > 0.01
-            ):
+            if channel.user_volume is not None and abs(hardware_vol - channel.user_volume) > 0.01:
                 # User set a volume — re-assert it against external changes
                 channel.volume = channel.user_volume
                 volume_to_set = channel.user_volume

@@ -37,6 +37,7 @@ Linux-PEQ               # works if ~/.local/bin is in PATH
 ```bash
 Linux-PEQ --scan           # list audio apps
 Linux-PEQ --create-eq 125  # create EQ sink for a sink input
+Linux-PEQ --theme plum     # launch with plum theme (persisted)
 Linux-PEQ --help            # show all options
 ```
 
@@ -47,7 +48,8 @@ Linux-PEQ --help            # show all options
 | `Tab` / `Shift+Tab` | Next / previous channel |
 | `m` | Toggle mute on selected channel |
 | `1`–`0` | Focus EQ bands 1–10 |
-| `t` | Cycle theme (Amber → Slate → Mono → Amber) |
+| `t` | Cycle theme forward (7 variants) |
+| `T` | Cycle theme backward |
 | `q` | Quit |
 
 **Mouse:** Click a channel to select it. Drag EQ band bars vertically to adjust gain. Scroll on bands for fine-tuning. Click/drag the volume slider bar.
@@ -89,6 +91,6 @@ make test              # run test suite
 
 ## Design
 
-Minimalist dark theme with 3 variants: **Amber** (default, warm gold accent), **Slate** (cool blue-grey), and **Mono** (pure greyscale). Off-black canvas, single muted accent per theme, 1px borders. Press `t` to cycle themes at runtime. Designed for someone tweaking EQ at their desk in a dim room.
+Minimalist dark theme with 8 variants: **Amber** (default, warm gold accent), **Slate** (cool blue-grey), **Mono** (pure greyscale), **Forest** (muted moss green), **Copper** (warm terracotta), **Plum** (muted violet), **Ocean** (muted teal), and **Rosewood** (desaturated crimson). Off-black canvas, single muted accent per theme, 1px borders. Press `t` / `T` to cycle forward/backward at runtime. Theme preference is persisted to `~/.config/peq/settings.json`. Use `--theme <name>` flag to set the theme from the command line. Designed for someone tweaking EQ at their desk in a dim room.
 
 **Presets:** Flat, Bass Boost, Vocal Boost, Loudness — one-click buttons below the EQ panel.
