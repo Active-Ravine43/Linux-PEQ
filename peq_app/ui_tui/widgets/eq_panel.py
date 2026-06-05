@@ -6,11 +6,25 @@ from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widgets import Static
 
-from peq_app.config import DEFAULT_BAND_FREQUENCIES
 from peq_app.state.app_state import get_state
 from peq_app.state.models import Channel
 from peq_app.ui_tui.widgets.eq_band_widget import EQBandWidget
 from peq_app.ui_tui.widgets.volume_slider import VolumeSlider
+
+# Single-word descriptors for each EQ band — helps newbies understand what
+# each frequency range affects in the sound.
+_BAND_DESCRIPTORS = [
+    "Sub",       # 31 Hz  — sub-bass rumble
+    "Bass",      # 63 Hz  — bass punch
+    "Warmth",    # 125 Hz — upper bass fatness
+    "Boom",      # 250 Hz — low-mid fullness
+    "Body",      # 500 Hz — midrange body
+    "Cut",      # 1 kHz  — where sounds cut through
+    "Bite",     # 2 kHz  — upper-mid aggression
+    "Clarity",  # 4 kHz  — vocal presence
+    "Crisp",    # 8 kHz  — crispness and detail
+    "Top",     # 16 kHz — top-end polish
+]
 
 
 def _format_freq(freq_hz: float) -> str:
@@ -32,8 +46,8 @@ class EQPanel(Vertical):
             for i in range(10):
                 yield EQBandWidget(band_index=i, id=f"band-{i}")
         with Horizontal(id="freq-labels"):
-            for f in DEFAULT_BAND_FREQUENCIES:
-                yield Static(_format_freq(f), classes="freq-label")
+            for desc in _BAND_DESCRIPTORS:
+                yield Static(desc, classes="freq-label")
 
     def on_mount(self) -> None:
         self._state = get_state()
