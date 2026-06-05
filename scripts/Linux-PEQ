@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Linux-PEQ — Per-application Parametric Equalizer launcher
+# ─────────────────────────────────────────────────────────────────────────────
+# Usage:
+#   Linux-PEQ               Launch the TUI (default)
+#   Linux-PEQ --scan         List audio apps and exit
+#   Linux-PEQ --create-eq N  Create EQ filter-chain for sink input N
+#   Linux-PEQ --help         Show all options
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+# ── Locate the project root ──────────────────────────────────────────────────
+# Resolve symlinks to find the real script location
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# ── Activate venv if it exists ───────────────────────────────────────────────
+VENV_PATH="${PROJECT_ROOT}/.venv"
+if [ -f "${VENV_PATH}/bin/activate" ]; then
+    # shellcheck source=/dev/null
+    source "${VENV_PATH}/bin/activate"
+fi
+
+# ── Check if peq_app is importable ───────────────────────────────────────────
+if ! python -c "import peq_app" 2>/dev/null; then
+    echo "⚠  peq_app not found in Python path."
+    echo "   Run 'make' in ${PROJECT_ROOT} to set up the environment."
+    exit 1
+fi
+
+# ── Run the app ──────────────────────────────────────────────────────────────
+exec python -m peq_app "$@"

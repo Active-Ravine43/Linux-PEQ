@@ -16,9 +16,56 @@ dependencies = [
     "click>=8.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pylint>=3.0",
+    "black>=24.0",
+    "isort>=5.13",
+    "pytest>=8.0",
+]
+
 [project.scripts]
 peq = "peq_app.__main__:main"
+Linux-PEQ = "peq_app.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["peq_app", "peq_app.*"]
+
+# ── Black (code formatter) ───────────────────────────────────────────
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.venv
+  | \.git
+  | peq\.egg-info
+  | __pycache__
+)/
+'''
+
+# ── isort (import sorter) ────────────────────────────────────────────
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["peq_app"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+# ── pylint (static analysis) ─────────────────────────────────────────
+[tool.pylint.main]
+ignore = ["tests", ".venv", "peq.egg-info"]
+py-version = "3.12"
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-module-docstring",   # __main__ is the entry point
+    "missing-class-docstring",    # Textual widgets are self-documenting
+    "too-few-public-methods",     # dataclasses/config classes
+    "broad-exception-caught",     # audio backend deals with system calls
+    "too-many-instance-attributes", # TUI widgets are stateful
+]
+
+[tool.pylint.format]
+max-line-length = 100

@@ -11,17 +11,33 @@ A Linux audio equalizer with per-application volume control and independent 10-b
 ## Quick Start
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-python -m peq_app
+# Clone + set up
+git clone <repo-url> && cd Linux-Audio-Management-App
+make                    # creates venv + installs dependencies
+make run                # launch the TUI
 ```
 
-Or use the Makefile:
+After setup, you can launch the app from anywhere:
 
 ```bash
-make        # create venv + install
-make run    # launch the TUI
+# From the project directory — just type:
+./scripts/Linux-PEQ
+
+# Or install system-wide (requires sudo):
+make install-system
+Linux-PEQ               # now works from any directory
+
+# Or install per-user (no sudo):
+make install-user
+Linux-PEQ               # works if ~/.local/bin is in PATH
+```
+
+## CLI Mode
+
+```bash
+Linux-PEQ --scan           # list audio apps
+Linux-PEQ --create-eq 125  # create EQ sink for a sink input
+Linux-PEQ --help            # show all options
 ```
 
 ## Usage
@@ -31,6 +47,7 @@ make run    # launch the TUI
 | `Tab` / `Shift+Tab` | Next / previous channel |
 | `m` | Toggle mute on selected channel |
 | `1`–`0` | Focus EQ bands 1–10 |
+| `t` | Cycle theme (Amber → Slate → Mono → Amber) |
 | `q` | Quit |
 
 **Mouse:** Click a channel to select it. Drag EQ band bars vertically to adjust gain. Scroll on bands for fine-tuning. Click/drag the volume slider bar.
@@ -55,16 +72,23 @@ peq_app/
 
 Each EQ channel runs as a lightweight `pipewire -c filter-chain.conf` child process. Runtime band adjustments use `pw-cli set-param` on the filter-chain sink node (~1ms latency).
 
-## CLI Mode
+## Code Quality
 
 ```bash
-# List audio apps
-python -m peq_app --scan
-
-# Create an EQ sink for a sink input
-python -m peq_app --create-eq 125
+make format            # format code with black + isort
+make format-check      # check formatting (CI mode, no changes)
+make lint              # lint with pylint (errors + warnings only)
+make lint-full         # lint with pylint (all checks)
+make lint-all          # format-check + full lint
+make test              # run test suite
 ```
+
+- **Formatter:** [Black](https://github.com/psf/black) (line length 100) + [isort](https://github.com/PyCQA/isort) (Black profile)
+- **Linter:** [Pylint](https://github.com/pylint-dev/pylint) — config in `pyproject.toml`
+- **Testing:** [pytest](https://github.com/pytest-dev/pytest)
 
 ## Design
 
-Minimalist dark theme — off-black canvas, single muted amber accent, 1px borders. Designed for someone tweaking EQ at their desk in a dim room.
+Minimalist dark theme with 3 variants: **Amber** (default, warm gold accent), **Slate** (cool blue-grey), and **Mono** (pure greyscale). Off-black canvas, single muted accent per theme, 1px borders. Press `t` to cycle themes at runtime. Designed for someone tweaking EQ at their desk in a dim room.
+
+**Presets:** Flat, Bass Boost, Vocal Boost, Loudness — one-click buttons below the EQ panel.

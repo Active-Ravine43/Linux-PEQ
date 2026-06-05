@@ -20,7 +20,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Callable, Awaitable
+from typing import Awaitable, Callable
 
 from peq_app.config import STATE_DIR, ensure_dirs
 from peq_app.state.models import (
@@ -49,7 +49,8 @@ class AppState:
         return cls._instance
 
     def __init__(self) -> None:
-        if self._initialized:
+        # _initialized is set by __new__ before __init__ runs.
+        if self._initialized:  # pylint: disable=access-member-before-definition
             return
         self._initialized = True
 
@@ -101,7 +102,10 @@ class AppState:
         async with self._lock:
             is_new = channel.id not in self.channels
             self.channels[channel.id] = channel
-        await self._notify("channels_updated", {"added": [channel] if is_new else [], "updated": [channel] if not is_new else []})
+        await self._notify(
+            "channels_updated",
+            {"added": [channel] if is_new else [], "updated": [channel] if not is_new else []},
+        )
 
     async def remove_channel(self, channel_id: str) -> None:
         """Remove a channel (app stopped)."""
@@ -163,12 +167,14 @@ class AppState:
 
     async def toggle_mute(self, channel_id: str) -> None:
         """Toggle mute for a channel."""
+        muted = None
         async with self._lock:
             channel = self.channels.get(channel_id)
             if channel:
                 channel.is_muted = not channel.is_muted
                 muted = channel.is_muted
-        await self._notify("volume_changed", {"channel_id": channel_id, "muted": muted})
+        if muted is not None:
+            await self._notify("volume_changed", {"channel_id": channel_id, "muted": muted})
 
     # ------------------------------------------------------------------
     # EQ bands
@@ -195,13 +201,16 @@ class AppState:
             if q is not None:
                 band.q = max(0.1, min(10.0, q))
 
-        await self._notify("eq_changed", {
-            "channel_id": channel_id,
-            "band_index": band_index,
-            "gain_db": gain_db,
-            "freq_hz": freq_hz,
-            "q": q,
-        })
+        await self._notify(
+            "eq_changed",
+            {
+                "channel_id": channel_id,
+                "band_index": band_index,
+                "gain_db": gain_db,
+                "freq_hz": freq_hz,
+                "q": q,
+            },
+        )
 
     async def set_all_bands(self, channel_id: str, bands: list[dict]) -> None:
         """Replace all EQ band settings for a channel (preset application)."""
@@ -213,7 +222,9 @@ class AppState:
                 if i < len(channel.eq_bands):
                     channel.eq_bands[i].gain_db = b.get("gain_db", 0.0)
                     channel.eq_bands[i].q = b.get("q", channel.eq_bands[i].q)
-                    channel.eq_bands[i].filter_type = b.get("filter_type", channel.eq_bands[i].filter_type)
+                    channel.eq_bands[i].filter_type = b.get(
+                        "filter_type", channel.eq_bands[i].filter_type
+                    )
 
         await self._notify("preset_applied", {"channel_id": channel_id, "bands": bands})
 
@@ -225,14 +236,18 @@ class AppState:
     # EQ chain lifecycle
     # ------------------------------------------------------------------
 
-    async def set_eq_chain_created(self, channel_id: str, filter_pid: int, filter_node_id: int) -> None:
+    async def set_eq_chain_created(
+        self, channel_id: str, filter_pid: int, filter_node_id: int
+    ) -> None:
         """Record that an EQ filter-chain process has started for a channel."""
         async with self._lock:
             channel = self.channels.get(channel_id)
             if channel:
                 channel.filter_pid = filter_pid
                 channel.filter_node_id = filter_node_id
-        await self._notify("eq_chain_created", {"channel_id": channel_id, "node_id": filter_node_id})
+        await self._notify(
+            "eq_chain_created", {"channel_id": channel_id, "node_id": filter_node_id}
+        )
 
     async def set_eq_chain_destroyed(self, channel_id: str) -> None:
         """Record that an EQ filter-chain process has stopped."""

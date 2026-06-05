@@ -1,6 +1,7 @@
 """Entry point: python -m peq_app [--tui|--gui]"""
 
 import sys
+
 import click
 
 
@@ -52,4 +53,5 @@ def main(ui: str, scan: bool, create_eq: int | None) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # Click reads sys.argv automatically when invoked with no arguments.
+    main()  # pylint: disable=no-value-for-parameter
