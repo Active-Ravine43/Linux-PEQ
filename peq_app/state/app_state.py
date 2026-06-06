@@ -95,6 +95,10 @@ class AppState:
                 await observer(event, data)
             except Exception:
                 logger.exception("Observer failed for event %s", event)
+        # Clear the dirty flag only after *all* observers have had a
+        # chance to consume the change — a shared single-consumer flag
+        # would otherwise let the first observer starve the rest.
+        self._dirty = False
 
     @property
     def is_dirty(self) -> bool:

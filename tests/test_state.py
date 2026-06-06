@@ -324,15 +324,17 @@ class TestObserverPattern:
 
 
 class TestDirtyFlag:
-    """Dirty flag is set on mutation, cleared explicitly."""
+    """Dirty flag is set during _notify, cleared after all observers run."""
 
     @pytest.mark.asyncio
-    async def test_dirty_set_on_mutation(self) -> None:
+    async def test_dirty_cleared_after_mutation(self) -> None:
+        """_notify clears dirty after observers consume the change."""
         state = _fresh_state()
         state.clear_dirty()
         assert state.is_dirty is False
         await state.set_volume("master", 0.5)
-        assert state.is_dirty is True
+        # _notify has already cleared the flag — all observers got their look.
+        assert state.is_dirty is False
 
     @pytest.mark.asyncio
     async def test_clear_dirty(self) -> None:
@@ -341,11 +343,21 @@ class TestDirtyFlag:
         assert state.is_dirty is False
 
     @pytest.mark.asyncio
-    async def test_dirty_set_on_channel_select(self) -> None:
+    async def test_dirty_true_during_observer(self) -> None:
+        """Observers see is_dirty == True while _notify is running."""
         state = _fresh_state()
         state.clear_dirty()
+        seen_dirty: list[bool] = []
+
+        async def _capture(_event: str, _data: object) -> None:
+            seen_dirty.append(state.is_dirty)
+
+        state.observe(_capture)
         await state.select_channel("master")
-        assert state.is_dirty is True
+        # The observer should have seen dirty=True during notification.
+        assert seen_dirty == [True]
+        # After _notify completes, dirty is cleared.
+        assert state.is_dirty is False
 
 
 class TestPersistence:
